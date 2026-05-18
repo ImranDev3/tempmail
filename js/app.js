@@ -55,7 +55,8 @@ async function fetchApi(params) {
 }
 
 function toggleTheme() {
-    const dark = document.body.classList.toggle('dark')
+    const dark = document.documentElement.classList.toggle('dark')
+    document.body.classList.toggle('dark', dark)
     themeToggle.textContent = dark ? '☀️' : '🌙'
     saveTheme(dark)
 }
@@ -99,7 +100,7 @@ async function generateEmail() {
         playSound()
     } catch (err) {
         emailDisplay.innerHTML = '<span class="placeholder">Click to generate</span>'
-        showToast('Failed to generate. Check connection.')
+        showToast(err.message || 'Generate failed. Check connection.')
     } finally {
         showLoading(false)
     }
@@ -268,7 +269,13 @@ document.addEventListener('click', e => {
     if (e.target === viewer) closeViewer()
 })
 
-if (loadTheme()) { document.body.classList.add('dark'); themeToggle.textContent = '☀️' }
+if (loadTheme()) {
+    document.body.classList.add('dark')
+    themeToggle.textContent = '☀️'
+} else {
+    document.documentElement.classList.remove('dark')
+    themeToggle.textContent = '🌙'
+}
 
 if (loadState()) {
     emailDisplay.innerHTML = storedAddress

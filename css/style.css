@@ -16,7 +16,7 @@
     --shadow-lg: 0 10px 25px rgba(0,0,0,0.08);
 }
 
-body.dark {
+:root.dark, body.dark {
     --primary: #818cf8;
     --primary-hover: #6366f1;
     --primary-light: #1e1b4b;
@@ -80,7 +80,7 @@ body {
 .email-display.copied {
     color: var(--success); background: #dcfce7; font-weight: 600;
 }
-body.dark .email-display.copied {
+:root.dark .email-display.copied, body.dark .email-display.copied {
     color: #86efac; background: #14532d;
 }
 .email-display .placeholder { color: var(--text-muted); font-weight: 400; font-size: 14px }
@@ -198,8 +198,8 @@ body.dark .email-display.copied {
     cursor: pointer; transition: all 0.2s;
 }
 .otp-badge:hover { background: #bbf7d0; transform: scale(1.05) }
-body.dark .otp-badge { background: #14532d; color: #86efac }
-body.dark .otp-badge:hover { background: #166534 }
+:root.dark .otp-badge, body.dark .otp-badge { background: #14532d; color: #86efac }
+:root.dark .otp-badge:hover, body.dark .otp-badge:hover { background: #166534 }
 
 /* Inline Email Viewer */
 .email-viewer { display: none; transition: all 0.25s ease }
@@ -237,7 +237,7 @@ body.dark .otp-badge:hover { background: #166534 }
     background: rgba(255,255,255,0.85); backdrop-filter: blur(4px);
     z-index: 2000; align-items: center; justify-content: center;
 }
-body.dark .loading { background: rgba(15,23,42,0.85) }
+:root.dark .loading, body.dark .loading { background: rgba(15,23,42,0.85) }
 .loading.active { display: flex }
 
 .spinner {
