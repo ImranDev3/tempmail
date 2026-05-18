@@ -1,5 +1,7 @@
 const API = '/api/proxy'
+const DIRECT_API = 'https://www.1secmail.com/api/v1'
 const STORAGE_KEY = 'tempmailpro'
+let useDirectApi = false
 
 let messages = []
 let storedAddress = ''
@@ -53,9 +55,21 @@ function loadTheme() {
 }
 
 async function fetchApi(params) {
-    const res = await fetch(`${API}?${params}`)
-    if (!res.ok) throw new Error(await res.text())
-    return res.json()
+    if (useDirectApi) {
+        const r = await fetch(`${DIRECT_API}?${params}`)
+        if (!r.ok) throw new Error(await r.text())
+        return r.json()
+    }
+    try {
+        const r = await fetch(`${API}?${params}`)
+        if (!r.ok) throw new Error(await r.text())
+        return r.json()
+    } catch (e) {
+        const r = await fetch(`${DIRECT_API}?${params}`)
+        if (!r.ok) throw new Error(await r.text())
+        useDirectApi = true
+        return r.json()
+    }
 }
 
 function toggleTheme() {
