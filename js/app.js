@@ -6,12 +6,15 @@ let storedAddress = ''
 let autoTimer = null
 let hasNew = false
 let wasEmpty = true
+let soundEnabled = localStorage.getItem('tempmail_sound') !== 'off'
+let activeViewerId = null
 
 const emailDisplay = document.getElementById('emailDisplay')
 const copyBtn = document.getElementById('copyBtn')
 const mailCount = document.getElementById('mailCount')
 const generateBtn = document.getElementById('generateBtn')
 const checkMailBtn = document.getElementById('checkMailBtn')
+const clearAllBtn = document.getElementById('clearAllBtn')
 const newBadge = document.getElementById('newBadge')
 const inboxList = document.getElementById('inboxList')
 const themeToggle = document.getElementById('themeToggle')
@@ -21,6 +24,7 @@ const viewerFrom = document.getElementById('viewerFrom')
 const viewerDate = document.getElementById('viewerDate')
 const viewerBody = document.getElementById('viewerBody')
 const viewerBack = document.getElementById('viewerBack')
+const viewerDelete = document.getElementById('viewerDelete')
 const loading = document.getElementById('loading')
 const toast = document.getElementById('toast')
 
@@ -70,6 +74,7 @@ function showToast(msg) {
 function showLoading(s) { loading.classList.toggle('active', s) }
 
 function playSound() {
+    if (!soundEnabled) return
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)()
         const o = ctx.createOscillator()
@@ -82,11 +87,18 @@ function playSound() {
     } catch (e) {}
 }
 
+function toggleSound() {
+    soundEnabled = !soundEnabled
+    localStorage.setItem('tempmail_sound', soundEnabled ? 'on' : 'off')
+    showToast(soundEnabled ? 'Sound on' : 'Sound off')
+}
+
 async function generateEmail() {
     emailDisplay.textContent = 'Generating...'
     showLoading(true)
     wasEmpty = true; hasNew = false
     newBadge.style.display = 'none'
+    closeViewer()
     try {
         const data = await fetchApi('action=genRandomMailbox&count=1')
         storedAddress = data[0]
@@ -144,8 +156,28 @@ async function fetchAndRefresh() {
     showLoading(false)
 }
 
+function deleteMessage(id) {
+    messages = messages.filter(m => m.id !== id)
+    saveState()
+    mailCount.textContent = messages.length
+    if (activeViewerId === id) closeViewer()
+    renderInbox()
+    showToast('Message deleted')
+}
+
+function clearAllMessages() {
+    if (!messages.length) return
+    messages = []
+    saveState()
+    mailCount.textContent = '0'
+    closeViewer()
+    renderInbox()
+    showToast('All messages cleared')
+}
+
 function openEmail(id) {
     if (!storedAddress) return
+    activeViewerId = id
     showLoading(true)
     const msg = messages.find(m => m.id === id)
     if (msg?.body) {
@@ -180,22 +212,30 @@ function showEmail(msg) {
 }
 
 function closeViewer() {
+    activeViewerId = null
     viewer.classList.remove('open')
     setTimeout(() => { viewer.style.display = 'none'; inboxList.style.display = 'block' }, 250)
 }
 
+function deleteFromViewer() {
+    if (activeViewerId) deleteMessage(activeViewerId)
+}
+
 function extractOtp(msg) {
     const text = `${msg.subject || ''} ${msg.from || ''}`
-    const match = text.match(/\b(\d{4,8})\b/)
+    let match = text.match(/\b(\d{4,8})\b/)
+    if (match) return match[1]
+    const body = msg.htmlBody || msg.textBody || ''
+    const clean = body.replace(/<[^>]*>/g, '')
+    match = clean.match(/\b(\d{4,8})\b/)
     return match ? match[1] : null
 }
 
 function copyOtp(id) {
     const msg = messages.find(m => m.id === id)
     if (!msg) return
-    const text = `${msg.subject || ''} ${msg.from || ''}`
-    const match = text.match(/\b(\d{4,8})\b/)
-    if (match) navigator.clipboard.writeText(match[1]).then(() => showToast('OTP copied!')).catch(() => {})
+    const otp = extractOtp(msg)
+    if (otp) navigator.clipboard.writeText(otp).then(() => showToast('OTP copied!')).catch(() => {})
 }
 
 function renderInbox() {
@@ -226,9 +266,11 @@ function renderInbox() {
                 <div class="mail-subject">${esc(msg.subject)}</div>
             </div>
             <span class="mail-time">${timeAgo(msg.date)}</span>
+            <button class="mail-item-delete" data-id="${msg.id}" aria-label="Delete message">✕</button>
         `
         const badge = item.querySelector('.otp-badge')
         if (badge) badge.addEventListener('click', e => { e.stopPropagation(); copyOtp(msg.id) })
+        item.querySelector('.mail-item-delete').addEventListener('click', e => { e.stopPropagation(); deleteMessage(msg.id) })
         item.addEventListener('click', () => openEmail(msg.id))
         inboxList.appendChild(item)
     })
@@ -261,12 +303,23 @@ function copyEmail() {
 
 generateBtn.addEventListener('click', generateEmail)
 checkMailBtn.addEventListener('click', fetchAndRefresh)
+clearAllBtn.addEventListener('click', clearAllMessages)
 copyBtn.addEventListener('click', copyEmail)
 emailDisplay.addEventListener('click', copyEmail)
 themeToggle.addEventListener('click', toggleTheme)
 viewerBack.addEventListener('click', closeViewer)
-document.addEventListener('click', e => {
-    if (e.target === viewer) closeViewer()
+viewerDelete.addEventListener('click', deleteFromViewer)
+document.addEventListener('click', e => { if (e.target === viewer) closeViewer() })
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeViewer() })
+
+document.addEventListener('dblclick', e => {
+    if (e.target.closest('.mail-item') && e.target.closest('.otp-badge')) return
+    const mailItem = e.target.closest('.mail-item')
+    if (mailItem) {
+        const idx = Array.from(inboxList.children).indexOf(mailItem)
+        const msg = messages[idx]
+        if (msg) deleteMessage(msg.id)
+    }
 })
 
 if (loadTheme()) {
