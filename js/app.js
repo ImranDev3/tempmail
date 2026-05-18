@@ -27,6 +27,7 @@ const viewerBack = document.getElementById('viewerBack')
 const viewerDelete = document.getElementById('viewerDelete')
 const loading = document.getElementById('loading')
 const toast = document.getElementById('toast')
+const soundToggle = document.getElementById('soundToggle')
 
 function saveState() {
     const toSave = messages.map(m => ({ id: m.id, from: m.from, subject: m.subject, date: m.date }))
@@ -96,6 +97,8 @@ function playSound() {
 function toggleSound() {
     soundEnabled = !soundEnabled
     localStorage.setItem('tempmail_sound', soundEnabled ? 'on' : 'off')
+    soundToggle.textContent = soundEnabled ? '🔔' : '🔕'
+    soundToggle.classList.toggle('muted', !soundEnabled)
     showToast(soundEnabled ? 'Sound on' : 'Sound off')
 }
 
@@ -315,6 +318,7 @@ function copyEmail() {
 }
 
 generateBtn.addEventListener('click', generateEmail)
+soundToggle.addEventListener('click', toggleSound)
 checkMailBtn.addEventListener('click', fetchAndRefresh)
 clearAllBtn.addEventListener('click', clearAllMessages)
 copyBtn.addEventListener('click', copyEmail)
@@ -342,6 +346,8 @@ if (loadTheme()) {
     document.documentElement.classList.remove('dark')
     themeToggle.textContent = '🌙'
 }
+
+if (!soundEnabled) { soundToggle.textContent = '🔕'; soundToggle.classList.add('muted') }
 
 ;(async () => {
     if (await loadState()) {
