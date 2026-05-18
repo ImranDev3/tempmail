@@ -10,7 +10,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <header class="header">
             <div class="logo">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -20,38 +19,33 @@
                 <h1>TempMail</h1>
                 <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
             </div>
-            <p class="tagline">Free disposable email — no signup needed</p>
+            <p class="tagline">The world's most relaxing temp mail</p>
         </header>
 
-        <!-- Email Address Section -->
         <section class="email-section">
             <div class="email-box">
                 <div class="email-display" id="emailDisplay">
-                    <span class="placeholder">Click below to generate your temp email</span>
+                    <span class="placeholder">Click below to generate</span>
                 </div>
-                <div class="email-actions">
-                    <button class="btn btn-copy" id="copyBtn" title="Copy email" disabled>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                        </svg>
-                    </button>
-                    <button class="btn btn-refresh" id="refreshBtn" title="Check new mail">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23 4 23 10 17 10"/>
-                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                        </svg>
-                    </button>
-                </div>
+                <span class="email-count" id="emailCount">0</span>
             </div>
             <button class="btn btn-generate" id="generateBtn">Generate New Email</button>
         </section>
 
-        <!-- Inbox Section -->
         <section class="inbox-section">
             <div class="inbox-header">
-                <h2>📬 Inbox</h2>
-                <span class="mail-count" id="mailCount">0</span>
+                <h2>Inbox</h2>
+                <div class="inbox-header-actions">
+                    <button class="btn btn-refresh-inbox" id="checkMailBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                        </svg>
+                        Check
+                        <span class="new-badge" id="newBadge" style="display:none">!</span>
+                    </button>
+                    <span class="live-indicator"><span class="pulse-dot"></span> Live</span>
+                </div>
             </div>
             <div class="inbox-list" id="inboxList">
                 <div class="empty-state">
@@ -60,60 +54,29 @@
                         <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
                     </svg>
                     <p>Waiting for messages...</p>
-                    <span>Click 🔄 below to check</span>
+                    <span>Send an email to your temp address</span>
                 </div>
             </div>
-            <div class="inbox-footer">
-                <button class="btn btn-refresh-inbox" id="checkMailBtn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="23 4 23 10 17 10"/>
-                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                    </svg>
-                    Check New Mail
-                </button>
-                <span class="live-indicator"><span class="pulse-dot"></span> Live</span>
+            <div class="email-viewer" id="emailViewer" style="display:none">
+                <div class="viewer-header">
+                    <button class="viewer-back" id="viewerBack">← Back</button>
+                </div>
+                <div class="viewer-content">
+                    <h3 class="viewer-subject" id="viewerSubject"></h3>
+                    <div class="viewer-meta">
+                        <span class="viewer-from" id="viewerFrom"></span>
+                        <span class="viewer-date" id="viewerDate"></span>
+                    </div>
+                    <div class="viewer-body" id="viewerBody"></div>
+                </div>
             </div>
         </section>
 
-        <!-- Email View Modal -->
-        <div class="modal" id="emailModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button class="btn btn-back" id="backBtn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="19" y1="12" x2="5" y2="12"/>
-                            <polyline points="12 19 5 12 12 5"/>
-                        </svg>
-                        Back
-                    </button>
-                    <button class="btn btn-delete" id="deleteBtn">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="email-view" id="emailView">
-                    <h3 class="email-subject" id="emailSubject"></h3>
-                    <div class="email-meta">
-                        <span class="email-from" id="emailFrom"></span>
-                        <span class="email-date" id="emailDate"></span>
-                    </div>
-                    <div class="email-body" id="emailBody"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Loading Overlay -->
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Loading...</p>
         </div>
-
-        <!-- Toast Notification -->
         <div class="toast" id="toast"></div>
     </div>
-
     <script src="js/app.js"></script>
 </body>
 </html>

@@ -4,21 +4,22 @@ const STORAGE_KEY = 'tempmailpro'
 let messages = []
 let storedAddress = ''
 let autoTimer = null
+let hasNew = false
+let wasEmpty = true
 
 const emailDisplay = document.getElementById('emailDisplay')
+const emailCount = document.getElementById('emailCount')
 const generateBtn = document.getElementById('generateBtn')
-const copyBtn = document.getElementById('copyBtn')
 const checkMailBtn = document.getElementById('checkMailBtn')
+const newBadge = document.getElementById('newBadge')
 const inboxList = document.getElementById('inboxList')
-const mailCount = document.getElementById('mailCount')
 const themeToggle = document.getElementById('themeToggle')
-const emailModal = document.getElementById('emailModal')
-const emailSubject = document.getElementById('emailSubject')
-const emailFrom = document.getElementById('emailFrom')
-const emailDate = document.getElementById('emailDate')
-const emailBody = document.getElementById('emailBody')
-const backBtn = document.getElementById('backBtn')
-const deleteBtn = document.getElementById('deleteBtn')
+const viewer = document.getElementById('emailViewer')
+const viewerSubject = document.getElementById('viewerSubject')
+const viewerFrom = document.getElementById('viewerFrom')
+const viewerDate = document.getElementById('viewerDate')
+const viewerBody = document.getElementById('viewerBody')
+const viewerBack = document.getElementById('viewerBack')
 const loading = document.getElementById('loading')
 const toast = document.getElementById('toast')
 
@@ -39,13 +40,8 @@ function loadState() {
     return false
 }
 
-function saveTheme(dark) {
-    localStorage.setItem('tempmail_theme', dark ? 'dark' : 'light')
-}
-
-function loadTheme() {
-    return localStorage.getItem('tempmail_theme') === 'dark'
-}
+function saveTheme(dark) { localStorage.setItem('tempmail_theme', dark ? 'dark' : 'light') }
+function loadTheme() { return localStorage.getItem('tempmail_theme') === 'dark' }
 
 async function fetchApi(params) {
     const res = await fetch(`${API}?${params}`)
@@ -60,33 +56,43 @@ function toggleTheme() {
 }
 
 function showToast(msg) {
-    toast.textContent = msg
-    toast.classList.add('active')
+    toast.textContent = msg; toast.classList.add('active')
     clearTimeout(toast._t)
     toast._t = setTimeout(() => toast.classList.remove('active'), 2000)
 }
 
-function showLoading(show) {
-    loading.classList.toggle('active', show)
+function showLoading(s) { loading.classList.toggle('active', s) }
+
+function playSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)()
+        const o = ctx.createOscillator()
+        const g = ctx.createGain()
+        o.connect(g); g.connect(ctx.destination)
+        o.frequency.value = 880; o.type = 'sine'
+        g.gain.setValueAtTime(0.3, ctx.currentTime)
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3)
+        o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.3)
+    } catch (e) {}
 }
 
 async function generateEmail() {
     emailDisplay.textContent = 'Generating...'
-    copyBtn.disabled = true
     showLoading(true)
+    wasEmpty = true; hasNew = false
+    newBadge.style.display = 'none'
     try {
         const data = await fetchApi('action=genRandomMailbox&count=1')
         storedAddress = data[0]
         messages = []
         saveState()
         emailDisplay.innerHTML = storedAddress
-        copyBtn.disabled = false
+        emailCount.textContent = '0'
         renderInbox()
         startAutoRefresh()
         navigator.clipboard.writeText(storedAddress).catch(() => {})
-        showToast('📋 Copied to clipboard!')
+        playSound()
     } catch (err) {
-        showToast('Failed. Try again.')
         emailDisplay.innerHTML = '<span class="placeholder">Click to generate</span>'
     } finally {
         showLoading(false)
@@ -109,44 +115,60 @@ async function fetchInbox() {
         for (const m of data) {
             if (!existingIds.has(m.id)) { messages.push(m); added++ }
         }
-        if (added || !messages.length) {
+        if (added) {
             messages.sort((a, b) => new Date(b.date) - new Date(a.date))
             saveState()
+            hasNew = true; wasEmpty = false
+            newBadge.style.display = 'inline'
+            playSound()
+            emailCount.textContent = messages.length
+            renderInbox()
+        } else if (!messages.length) {
             renderInbox()
         }
     } catch (err) {}
 }
 
-async function fetchAndShow() {
+async function fetchAndRefresh() {
+    newBadge.style.display = 'none'
+    hasNew = false
     await fetchInbox()
 }
 
-async function openEmail(id) {
+function openEmail(id) {
     if (!storedAddress) return
     showLoading(true)
-    try {
-        const at = storedAddress.indexOf('@')
-        const msg = await fetchApi(`action=readMessage&login=${storedAddress.slice(0, at)}&domain=${storedAddress.slice(at + 1)}&id=${id}`)
-        emailSubject.textContent = msg.subject || '(No Subject)'
-        emailFrom.textContent = msg.from || 'Unknown'
-        emailDate.textContent = msg.date || ''
-        emailBody.innerHTML = msg.htmlBody || msg.textBody?.replace(/\n/g, '<br>') || '<i>(No content)</i>'
-        emailModal.classList.add('active')
-    } catch (err) {
-        showToast('Failed to load')
-    } finally {
+    const msg = messages.find(m => m.id === id)
+    if (msg?.body) {
+        showEmail(msg)
         showLoading(false)
+        return
     }
+    const at = storedAddress.indexOf('@')
+    fetchApi(`action=readMessage&login=${storedAddress.slice(0, at)}&domain=${storedAddress.slice(at + 1)}&id=${id}`)
+        .then(msg => {
+            msg.body = true
+            const m = messages.find(m => m.id === id)
+            if (m) m.body = msg
+            showEmail(msg)
+        })
+        .catch(() => showToast('Failed'))
+        .finally(() => showLoading(false))
 }
 
-function closeEmail() { emailModal.classList.remove('active') }
+function showEmail(msg) {
+    viewerSubject.textContent = msg.subject || '(No Subject)'
+    viewerFrom.textContent = msg.from || 'Unknown'
+    viewerDate.textContent = msg.date || ''
+    viewerBody.innerHTML = msg.htmlBody || msg.textBody?.replace(/\n/g, '<br>') || '<i>(No content)</i>'
+    viewer.style.display = 'block'
+    inboxList.style.display = 'none'
+    setTimeout(() => viewer.classList.add('open'), 10)
+}
 
-function copyOtp(id) {
-    const msg = messages.find(m => m.id === id)
-    if (!msg) return
-    const text = `${msg.subject || ''} ${msg.from || ''}`
-    const match = text.match(/\b(\d{4,8})\b/)
-    if (match) navigator.clipboard.writeText(match[1]).then(() => showToast('📋 OTP copied!')).catch(() => {})
+function closeViewer() {
+    viewer.classList.remove('open')
+    setTimeout(() => { viewer.style.display = 'none'; inboxList.style.display = 'block' }, 250)
 }
 
 function extractOtp(msg) {
@@ -155,9 +177,12 @@ function extractOtp(msg) {
     return match ? match[1] : null
 }
 
-function getPreview(msg) {
-    const s = (msg.subject || '') + ' — ' + (msg.from || '')
-    return s.length > 70 ? s.slice(0, 67) + '...' : s
+function copyOtp(id) {
+    const msg = messages.find(m => m.id === id)
+    if (!msg) return
+    const text = `${msg.subject || ''} ${msg.from || ''}`
+    const match = text.match(/\b(\d{4,8})\b/)
+    if (match) navigator.clipboard.writeText(match[1]).then(() => showToast('OTP copied!')).catch(() => {})
 }
 
 function renderInbox() {
@@ -173,27 +198,24 @@ function renderInbox() {
                 <span>Send an email to your temp address</span>
             </div>
         `
-        mailCount.textContent = '0'
+        emailCount.textContent = '0'
         return
     }
-    mailCount.textContent = messages.length
+    emailCount.textContent = messages.length
     messages.forEach((msg, i) => {
         const otp = extractOtp(msg)
         const item = document.createElement('div')
-        item.className = 'mail-item unread'
+        item.className = 'mail-item' + (i === 0 && hasNew ? ' new' : '')
         item.innerHTML = `
             ${otp ? `<span class="otp-badge" data-id="${msg.id}">${esc(otp)}</span>` : `<span class="mail-index">${i + 1}</span>`}
             <div class="mail-content">
                 <div class="mail-sender">${esc(msg.from)}</div>
                 <div class="mail-subject">${esc(msg.subject)}</div>
-                <div class="mail-preview">${esc(getPreview(msg))}</div>
             </div>
             <span class="mail-time">${timeAgo(msg.date)}</span>
         `
         const badge = item.querySelector('.otp-badge')
-        if (badge) {
-            badge.addEventListener('click', e => { e.stopPropagation(); copyOtp(msg.id) })
-        }
+        if (badge) badge.addEventListener('click', e => { e.stopPropagation(); copyOtp(msg.id) })
         item.addEventListener('click', () => openEmail(msg.id))
         inboxList.appendChild(item)
     })
@@ -202,7 +224,7 @@ function renderInbox() {
 function timeAgo(d) {
     if (!d) return ''
     const diff = Math.floor((Date.now() - new Date(d.replace(' ', 'T'))) / 1000)
-    if (diff < 60) return 'just now'
+    if (diff < 60) return 'now'
     if (diff < 3600) return `${Math.floor(diff / 60)}m`
     if (diff < 86400) return `${Math.floor(diff / 3600)}h`
     return new Date(d).toLocaleDateString()
@@ -211,24 +233,18 @@ function timeAgo(d) {
 function esc(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML }
 
 generateBtn.addEventListener('click', generateEmail)
-
-copyBtn.addEventListener('click', () => {
-    const e = emailDisplay.textContent
-    if (e?.includes('@')) navigator.clipboard.writeText(e).catch(() => {})
-})
-
-document.getElementById('refreshBtn')?.addEventListener('click', () => fetchInbox())
-checkMailBtn.addEventListener('click', () => fetchInbox())
+checkMailBtn.addEventListener('click', fetchAndRefresh)
 themeToggle.addEventListener('click', toggleTheme)
-backBtn.addEventListener('click', closeEmail)
-deleteBtn.addEventListener('click', closeEmail)
-emailModal.addEventListener('click', e => { if (e.target === emailModal) closeEmail() })
+viewerBack.addEventListener('click', closeViewer)
+document.addEventListener('click', e => {
+    if (e.target === viewer) closeViewer()
+})
 
 if (loadTheme()) { document.body.classList.add('dark'); themeToggle.textContent = '☀️' }
 
 if (loadState()) {
     emailDisplay.innerHTML = storedAddress
-    copyBtn.disabled = false
+    emailCount.textContent = messages.length
     renderInbox()
     startAutoRefresh()
 } else {
