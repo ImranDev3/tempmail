@@ -1,7 +1,6 @@
-const API_BASE = 'https://api.mail.tm'
+const API = '/api/proxy'
 const STORAGE_KEY = 'tempmailpro'
 
-let token = ''
 let messages = []
 let storedAddress = ''
 
@@ -23,30 +22,25 @@ const toast = document.getElementById('toast')
 
 function saveState() {
     const toSave = messages.map(m => ({ id: m.id, from: m.from, subject: m.subject, date: m.date }))
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, messages: toSave, address: storedAddress }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ messages: toSave, address: storedAddress }))
 }
 
 function loadState() {
     try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY))
-        if (saved && saved.address) {
-            token = saved.token || ''
+        if (saved?.address) {
             messages = saved.messages || []
-            storedAddress = saved.address || ''
+            storedAddress = saved.address
             return true
         }
     } catch (e) {}
     return false
 }
 
-async function api(path, opts = {}) {
-    const headers = {}
-    if (!(opts.body instanceof FormData)) headers['Content-Type'] = 'application/json'
-    if (token) headers['Authorization'] = `Bearer ${token}`
-    const res = await fetch(`${API_BASE}${path}`, { ...opts, headers })
-    const text = await res.text()
-    if (!res.ok) throw new Error(text)
-    return text ? JSON.parse(text) : null
+async function fetchApi(params) {
+    const res = await fetch(`${API}?${params}`)
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()
 }
 
 function showLoading(show) {
@@ -59,39 +53,16 @@ function showToast(msg) {
     setTimeout(() => toast.classList.remove('active'), 2500)
 }
 
-function randStr(n) {
-    const c = 'abcdefghijklmnopqrstuvwxyz0123456789'
-    let r = ''
-    for (let i = 0; i < n; i++) r += c[Math.floor(Math.random() * c.length)]
-    return r
-}
-
 async function generateEmail() {
     emailDisplay.textContent = 'Generating...'
     copyBtn.disabled = true
     showLoading(true)
     try {
-        const domains = await api('/domains')
-        const domain = domains['hydra:member'][0].domain
-        const address = `${randStr(8)}${randStr(4)}@${domain}`
-        const password = randStr(16)
-
-        await api('/accounts', {
-            method: 'POST',
-            body: JSON.stringify({ address, password })
-        })
-
-        const tok = await api('/token', {
-            method: 'POST',
-            body: JSON.stringify({ address, password })
-        })
-
-        token = tok.token || tok.id
-        storedAddress = address
+        const data = await fetchApi('action=genRandomMailbox&count=1')
+        storedAddress = data[0]
         messages = []
         saveState()
-
-        emailDisplay.innerHTML = address
+        emailDisplay.innerHTML = storedAddress
         copyBtn.disabled = false
         renderInbox()
         showToast('Email generated!')
@@ -104,17 +75,18 @@ async function generateEmail() {
 }
 
 async function fetchInbox() {
-    if (!token) return
+    if (!storedAddress) return
     try {
-        const data = await api('/messages?page=1')
-        const newMsgs = data['hydra:member'] || []
+        const at = storedAddress.indexOf('@')
+        const data = await fetchApi(`action=getMessages&login=${storedAddress.slice(0, at)}&domain=${storedAddress.slice(at + 1)}`)
+        if (!Array.isArray(data)) return
         const existingIds = new Set(messages.map(m => m.id))
         let added = 0
-        for (const m of newMsgs) {
+        for (const m of data) {
             if (!existingIds.has(m.id)) { messages.push(m); added++ }
         }
-        if (added || newMsgs.length === 0) {
-            messages.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date))
+        if (added || !messages.length) {
+            messages.sort((a, b) => new Date(b.date) - new Date(a.date))
             saveState()
             renderInbox()
             if (added) showToast(`${added} new!`)
@@ -147,10 +119,10 @@ function renderInbox() {
         item.innerHTML = `
             <span class="mail-index">${i + 1}</span>
             <div class="mail-content">
-                <div class="mail-sender">${escapeHtml(msg.from?.address || msg.from?.name || msg.from)}</div>
-                <div class="mail-subject">${escapeHtml(msg.subject)}</div>
+                <div class="mail-sender">${esc(msg.from)}</div>
+                <div class="mail-subject">${esc(msg.subject)}</div>
             </div>
-            <span class="mail-time">${timeAgo(msg.createdAt || msg.date)}</span>
+            <span class="mail-time">${timeAgo(msg.date)}</span>
         `
         item.addEventListener('click', () => openEmail(msg.id))
         inboxList.appendChild(item)
@@ -158,14 +130,15 @@ function renderInbox() {
 }
 
 async function openEmail(id) {
-    if (!token) return
+    if (!storedAddress) return
     showLoading(true)
     try {
-        const msg = await api(`/messages/${id}`)
+        const at = storedAddress.indexOf('@')
+        const msg = await fetchApi(`action=readMessage&login=${storedAddress.slice(0, at)}&domain=${storedAddress.slice(at + 1)}&id=${id}`)
         emailSubject.textContent = msg.subject || '(No Subject)'
-        emailFrom.textContent = msg.from?.address || msg.from?.name || 'Unknown'
-        emailDate.textContent = msg.createdAt || msg.date || ''
-        emailBody.innerHTML = msg.html?.[0] || msg.text?.[0]?.replace(/\n/g, '<br>') || '<i>(No content)</i>'
+        emailFrom.textContent = msg.from || 'Unknown'
+        emailDate.textContent = msg.date || ''
+        emailBody.innerHTML = msg.htmlBody || msg.textBody?.replace(/\n/g, '<br>') || '<i>(No content)</i>'
         emailModal.classList.add('active')
     } catch (err) {
         showToast('Failed')
@@ -176,28 +149,21 @@ async function openEmail(id) {
 
 function closeEmail() { emailModal.classList.remove('active') }
 
-function timeAgo(dateStr) {
-    if (!dateStr) return ''
-    const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000)
+function timeAgo(d) {
+    if (!d) return ''
+    const diff = Math.floor((Date.now() - new Date(d.replace(' ', 'T'))) / 1000)
     if (diff < 60) return 'just now'
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-    return new Date(dateStr).toLocaleDateString()
+    return new Date(d).toLocaleDateString()
 }
 
-function escapeHtml(text) {
-    const d = document.createElement('div')
-    d.textContent = text || ''
-    return d.innerHTML
-}
+function esc(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML }
 
 generateBtn.addEventListener('click', generateEmail)
 copyBtn.addEventListener('click', () => {
-    const email = emailDisplay.textContent
-    if (email?.includes('@')) {
-        navigator.clipboard.writeText(email).then(() => showToast('Copied!'))
-        .catch(() => navigator.clipboard.writeText(email))
-    }
+    const e = emailDisplay.textContent
+    if (e?.includes('@')) navigator.clipboard.writeText(e).then(() => showToast('Copied!')).catch(() => {})
 })
 refreshBtn.addEventListener('click', () => { fetchInbox(); showToast('Checking...') })
 backBtn.addEventListener('click', closeEmail)
