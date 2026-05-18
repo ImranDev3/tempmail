@@ -42,13 +42,16 @@ async function loadState() {
             storedPassword = saved.password
             messages = saved.messages || []
             try {
-                const tok = await (await fetch('https://api.mail.tm/token', {
+                const r = await fetch('https://api.mail.tm/token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ address: storedAddress, password: storedPassword })
-                })).json()
+                })
+                const text = await r.text()
+                if (!r.ok || !text) { localStorage.removeItem(STORAGE_KEY); return false }
+                const tok = JSON.parse(text)
                 MAILTM._token = tok.token
-                MAILTM._account = { address: storedAddress }
+                MAILTM._account = { address: storedAddress, password: storedPassword }
             } catch (e) {
                 return false
             }
@@ -200,6 +203,9 @@ async function openEmail(id) {
         showLoading(false)
         return
     }
+    if (!MAILTM._token && MAILTM._account?.password) {
+        await MAILTM.reAuth()
+    }
     try {
         const data = await MAILTM.readMessage(id)
         const m = messages.find(m => m.id === id)
@@ -210,18 +216,18 @@ async function openEmail(id) {
         }
         showEmail(data)
     } catch (e) {
-        showToast('Failed to load email')
+        showToast(e.message.includes('Unknown') || e.message.includes('404')
+            ? 'Message not found' : 'Failed to load email')
     } finally {
         showLoading(false)
     }
 }
 
 function showEmail(msg) {
-    const data = msg.body?.htmlBody ? msg.body : msg
-    viewerSubject.textContent = data.subject || '(No Subject)'
-    viewerFrom.textContent = data.from || 'Unknown'
-    viewerDate.textContent = data.date || ''
-    viewerBody.innerHTML = data.htmlBody || data.textBody?.replace(/\n/g, '<br>') || '<i>(No content)</i>'
+    viewerSubject.textContent = msg.subject || '(No Subject)'
+    viewerFrom.textContent = msg.from || 'Unknown'
+    viewerDate.textContent = msg.date || ''
+    viewerBody.innerHTML = msg.htmlBody || msg.textBody?.replace(/\n/g, '<br>') || '<i>(No content)</i>'
     viewer.style.display = 'block'
     inboxList.style.display = 'none'
     setTimeout(() => viewer.classList.add('open'), 10)
