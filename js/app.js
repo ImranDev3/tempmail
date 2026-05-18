@@ -42,7 +42,11 @@ function loadState() {
 }
 
 function saveTheme(dark) { localStorage.setItem('tempmail_theme', dark ? 'dark' : 'light') }
-function loadTheme() { return localStorage.getItem('tempmail_theme') === 'dark' }
+function loadTheme() {
+    const saved = localStorage.getItem('tempmail_theme')
+    if (saved === null) return true
+    return saved === 'dark'
+}
 
 async function fetchApi(params) {
     const res = await fetch(`${API}?${params}`)
@@ -95,6 +99,7 @@ async function generateEmail() {
         playSound()
     } catch (err) {
         emailDisplay.innerHTML = '<span class="placeholder">Click to generate</span>'
+        showToast('Failed to generate. Check connection.')
     } finally {
         showLoading(false)
     }
@@ -133,7 +138,9 @@ async function fetchInbox() {
 async function fetchAndRefresh() {
     newBadge.style.display = 'none'
     hasNew = false
+    showLoading(true)
     await fetchInbox()
+    showLoading(false)
 }
 
 function openEmail(id) {
@@ -147,21 +154,25 @@ function openEmail(id) {
     }
     const at = storedAddress.indexOf('@')
     fetchApi(`action=readMessage&login=${storedAddress.slice(0, at)}&domain=${storedAddress.slice(at + 1)}&id=${id}`)
-        .then(msg => {
-            msg.body = true
+        .then(data => {
             const m = messages.find(m => m.id === id)
-            if (m) m.body = msg
-            showEmail(msg)
+            if (m) {
+                m.htmlBody = data.htmlBody
+                m.textBody = data.textBody
+                m.body = true
+            }
+            showEmail(data)
         })
-        .catch(() => showToast('Failed'))
+        .catch(() => showToast('Failed to load email'))
         .finally(() => showLoading(false))
 }
 
 function showEmail(msg) {
-    viewerSubject.textContent = msg.subject || '(No Subject)'
-    viewerFrom.textContent = msg.from || 'Unknown'
-    viewerDate.textContent = msg.date || ''
-    viewerBody.innerHTML = msg.htmlBody || msg.textBody?.replace(/\n/g, '<br>') || '<i>(No content)</i>'
+    const data = msg.body?.htmlBody ? msg.body : msg
+    viewerSubject.textContent = data.subject || '(No Subject)'
+    viewerFrom.textContent = data.from || 'Unknown'
+    viewerDate.textContent = data.date || ''
+    viewerBody.innerHTML = data.htmlBody || data.textBody?.replace(/\n/g, '<br>') || '<i>(No content)</i>'
     viewer.style.display = 'block'
     inboxList.style.display = 'none'
     setTimeout(() => viewer.classList.add('open'), 10)
