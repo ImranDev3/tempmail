@@ -1,11 +1,8 @@
-const API = '/api/proxy'
-const DIRECT_API = 'https://www.1secmail.com/api/v1'
 const STORAGE_KEY = 'tempmailpro'
-const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:'
-let useDirectApi = isLocal
 
 let messages = []
 let storedAddress = ''
+let storedPassword = ''
 let autoTimer = null
 let hasNew = false
 let wasEmpty = true
@@ -33,15 +30,27 @@ const toast = document.getElementById('toast')
 
 function saveState() {
     const toSave = messages.map(m => ({ id: m.id, from: m.from, subject: m.subject, date: m.date }))
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ messages: toSave, address: storedAddress }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ messages: toSave, address: storedAddress, password: storedPassword }))
 }
 
-function loadState() {
+async function loadState() {
     try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY))
-        if (saved?.address) {
-            messages = saved.messages || []
+        if (saved?.address && saved?.password) {
             storedAddress = saved.address
+            storedPassword = saved.password
+            messages = saved.messages || []
+            try {
+                const tok = await (await fetch('https://api.mail.tm/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: storedAddress, password: storedPassword })
+                })).json()
+                MAILTM._token = tok.token
+                MAILTM._account = { address: storedAddress }
+            } catch (e) {
+                return false
+            }
             return true
         }
     } catch (e) {}
@@ -53,24 +62,6 @@ function loadTheme() {
     const saved = localStorage.getItem('tempmail_theme')
     if (saved === null) return true
     return saved === 'dark'
-}
-
-async function fetchApi(params) {
-    if (useDirectApi) {
-        const r = await fetch(`${DIRECT_API}?${params}`)
-        if (!r.ok) throw new Error(await r.text())
-        return r.json()
-    }
-    try {
-        const r = await fetch(`${API}?${params}`)
-        if (!r.ok) throw new Error(await r.text())
-        return r.json()
-    } catch (e) {
-        const r = await fetch(`${DIRECT_API}?${params}`)
-        if (!r.ok) throw new Error(await r.text())
-        useDirectApi = true
-        return r.json()
-    }
 }
 
 function toggleTheme() {
@@ -117,9 +108,9 @@ async function generateEmail() {
     let tries = 0
     while (tries < 3) {
         try {
-            const data = await fetchApi('action=genRandomMailbox&count=1')
-            if (!data || !data[0]) throw new Error('Empty response')
-            storedAddress = data[0]
+            const result = await MAILTM.generate()
+            storedAddress = result.address
+            storedPassword = result.password
             messages = []
             saveState()
             emailDisplay.innerHTML = storedAddress
@@ -134,7 +125,7 @@ async function generateEmail() {
             tries++
             if (tries >= 3) {
                 emailDisplay.innerHTML = '<span class="placeholder">Click to generate</span>'
-                showToast('Failed. Check network / Redeploy on Vercel.')
+                showToast(err.message)
             }
         }
     }
@@ -149,9 +140,7 @@ function startAutoRefresh() {
 async function fetchInbox() {
     if (!storedAddress) return
     try {
-        const at = storedAddress.indexOf('@')
-        const data = await fetchApi(`action=getMessages&login=${storedAddress.slice(0, at)}&domain=${storedAddress.slice(at + 1)}`)
-        if (!Array.isArray(data)) return
+        const data = await MAILTM.checkInbox()
         const existingIds = new Set(messages.map(m => m.id))
         let added = 0
         for (const m of data) {
@@ -198,7 +187,7 @@ function clearAllMessages() {
     showToast('All messages cleared')
 }
 
-function openEmail(id) {
+async function openEmail(id) {
     if (!storedAddress) return
     activeViewerId = id
     showLoading(true)
@@ -208,19 +197,20 @@ function openEmail(id) {
         showLoading(false)
         return
     }
-    const at = storedAddress.indexOf('@')
-    fetchApi(`action=readMessage&login=${storedAddress.slice(0, at)}&domain=${storedAddress.slice(at + 1)}&id=${id}`)
-        .then(data => {
-            const m = messages.find(m => m.id === id)
-            if (m) {
-                m.htmlBody = data.htmlBody
-                m.textBody = data.textBody
-                m.body = true
-            }
-            showEmail(data)
-        })
-        .catch(() => showToast('Failed to load email'))
-        .finally(() => showLoading(false))
+    try {
+        const data = await MAILTM.readMessage(id)
+        const m = messages.find(m => m.id === id)
+        if (m) {
+            m.htmlBody = data.htmlBody
+            m.textBody = data.textBody
+            m.body = true
+        }
+        showEmail(data)
+    } catch (e) {
+        showToast('Failed to load email')
+    } finally {
+        showLoading(false)
+    }
 }
 
 function showEmail(msg) {
@@ -353,11 +343,13 @@ if (loadTheme()) {
     themeToggle.textContent = '🌙'
 }
 
-if (loadState()) {
-    emailDisplay.innerHTML = storedAddress
-    mailCount.textContent = messages.length
-    renderInbox()
-    startAutoRefresh()
-} else {
-    generateEmail()
-}
+;(async () => {
+    if (await loadState()) {
+        emailDisplay.innerHTML = storedAddress
+        mailCount.textContent = messages.length
+        renderInbox()
+        startAutoRefresh()
+    } else {
+        generateEmail()
+    }
+})()
