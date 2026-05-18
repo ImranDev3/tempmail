@@ -71,9 +71,19 @@ body {
 }
 .email-box:hover { border-color: var(--primary) }
 
-.email-display { flex: 1; font-size: 15px; font-weight: 500; word-break: break-all; color: var(--text) }
+.email-display {
+    flex: 1; font-size: 15px; font-weight: 500; word-break: break-all;
+    color: var(--text); cursor: pointer; transition: color 0.3s, background 0.3s;
+    padding: 4px 8px; margin: -4px -8px; border-radius: 6px;
+}
+.email-display:hover { background: var(--primary-light) }
+.email-display.copied {
+    color: var(--success); background: #dcfce7; font-weight: 600;
+}
+body.dark .email-display.copied {
+    color: #86efac; background: #14532d;
+}
 .email-display .placeholder { color: var(--text-muted); font-weight: 400; font-size: 14px }
-.email-display { cursor: pointer }
 
 .btn-copy {
     background: var(--primary-light); color: var(--primary);
@@ -82,6 +92,7 @@ body {
     transition: all 0.2s;
 }
 .btn-copy:hover { background: var(--primary); color: #fff }
+.btn-copy.done { background: var(--success); color: #fff }
 
 .mail-count {
     background: var(--primary); color: #fff; font-size: 12px; font-weight: 700;
