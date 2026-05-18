@@ -90,7 +90,6 @@ async function fetchInbox() {
             messages.sort((a, b) => new Date(b.date) - new Date(a.date))
             saveState()
             renderInbox()
-            if (added) showToast(`${added} new!`)
         }
     } catch (err) {
         console.error(err)
@@ -171,10 +170,10 @@ function esc(t) { const d = document.createElement('div'); d.textContent = t || 
 generateBtn.addEventListener('click', generateEmail)
 copyBtn.addEventListener('click', () => {
     const e = emailDisplay.textContent
-    if (e?.includes('@')) navigator.clipboard.writeText(e).then(() => showToast('Copied!')).catch(() => {})
+    if (e?.includes('@')) navigator.clipboard.writeText(e).catch(() => {})
 })
-refreshBtn.addEventListener('click', () => { fetchInbox(); showToast('Checking...') })
-checkMailBtn.addEventListener('click', () => { fetchInbox(); showToast('Checking...') })
+refreshBtn.addEventListener('click', () => fetchInbox())
+checkMailBtn.addEventListener('click', () => fetchInbox())
 backBtn.addEventListener('click', closeEmail)
 deleteBtn.addEventListener('click', closeEmail)
 emailModal.addEventListener('click', e => { if (e.target === emailModal) closeEmail() })
