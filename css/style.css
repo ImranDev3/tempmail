@@ -185,6 +185,30 @@ body {
     font-weight: 600;
 }
 
+.inbox-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-check {
+    background: var(--primary-light);
+    color: var(--primary);
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.btn-check:hover {
+    background: var(--primary);
+    color: white;
+}
+
 .mail-count {
     font-size: 13px;
     color: var(--text-muted);
