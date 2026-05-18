@@ -8,7 +8,8 @@ let hasNew = false
 let wasEmpty = true
 
 const emailDisplay = document.getElementById('emailDisplay')
-const emailCount = document.getElementById('emailCount')
+const copyBtn = document.getElementById('copyBtn')
+const mailCount = document.getElementById('mailCount')
 const generateBtn = document.getElementById('generateBtn')
 const checkMailBtn = document.getElementById('checkMailBtn')
 const newBadge = document.getElementById('newBadge')
@@ -87,7 +88,7 @@ async function generateEmail() {
         messages = []
         saveState()
         emailDisplay.innerHTML = storedAddress
-        emailCount.textContent = '0'
+        mailCount.textContent = '0'
         renderInbox()
         startAutoRefresh()
         navigator.clipboard.writeText(storedAddress).catch(() => {})
@@ -121,7 +122,7 @@ async function fetchInbox() {
             hasNew = true; wasEmpty = false
             newBadge.style.display = 'inline'
             playSound()
-            emailCount.textContent = messages.length
+            mailCount.textContent = messages.length
             renderInbox()
         } else if (!messages.length) {
             renderInbox()
@@ -198,10 +199,10 @@ function renderInbox() {
                 <span>Send an email to your temp address</span>
             </div>
         `
-        emailCount.textContent = '0'
+        mailCount.textContent = '0'
         return
     }
-    emailCount.textContent = messages.length
+    mailCount.textContent = messages.length
     messages.forEach((msg, i) => {
         const otp = extractOtp(msg)
         const item = document.createElement('div')
@@ -232,8 +233,15 @@ function timeAgo(d) {
 
 function esc(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML }
 
+function copyEmail() {
+    const e = emailDisplay.textContent
+    if (e?.includes('@')) navigator.clipboard.writeText(e).then(() => showToast('Email copied!')).catch(() => {})
+}
+
 generateBtn.addEventListener('click', generateEmail)
 checkMailBtn.addEventListener('click', fetchAndRefresh)
+copyBtn.addEventListener('click', copyEmail)
+emailDisplay.addEventListener('click', copyEmail)
 themeToggle.addEventListener('click', toggleTheme)
 viewerBack.addEventListener('click', closeViewer)
 document.addEventListener('click', e => {
@@ -244,7 +252,7 @@ if (loadTheme()) { document.body.classList.add('dark'); themeToggle.textContent 
 
 if (loadState()) {
     emailDisplay.innerHTML = storedAddress
-    emailCount.textContent = messages.length
+    mailCount.textContent = messages.length
     renderInbox()
     startAutoRefresh()
 } else {

@@ -27,14 +27,19 @@
                 <div class="email-display" id="emailDisplay">
                     <span class="placeholder">Click below to generate</span>
                 </div>
-                <span class="email-count" id="emailCount">0</span>
+                <button class="btn btn-copy" id="copyBtn" title="Copy email">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                </button>
             </div>
             <button class="btn btn-generate" id="generateBtn">Generate New Email</button>
         </section>
 
         <section class="inbox-section">
             <div class="inbox-header">
-                <h2>Inbox</h2>
+                <h2>Inbox <span class="mail-count" id="mailCount">0</span></h2>
                 <div class="inbox-header-actions">
                     <button class="btn btn-refresh-inbox" id="checkMailBtn">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
