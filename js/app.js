@@ -97,6 +97,12 @@ async function fetchInbox() {
     }
 }
 
+function extractOtp(msg) {
+    const text = `${msg.subject || ''} ${msg.from || ''}`
+    const match = text.match(/\b(\d{4,8})\b/)
+    return match ? match[1] : null
+}
+
 function renderInbox() {
     inboxList.innerHTML = ''
     if (!messages.length) {
@@ -115,10 +121,11 @@ function renderInbox() {
     }
     mailCount.textContent = `${messages.length} message${messages.length > 1 ? 's' : ''}`
     messages.forEach((msg, i) => {
+        const otp = extractOtp(msg)
         const item = document.createElement('div')
         item.className = 'mail-item unread'
         item.innerHTML = `
-            <span class="mail-index">${i + 1}</span>
+            ${otp ? `<span class="otp-badge">${esc(otp)}</span>` : `<span class="mail-index">${i + 1}</span>`}
             <div class="mail-content">
                 <div class="mail-sender">${esc(msg.from)}</div>
                 <div class="mail-subject">${esc(msg.subject)}</div>
