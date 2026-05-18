@@ -25,10 +25,13 @@
     <img src="https://img.shields.io/badge/License-MIT-22c55e?style=flat-square"/>
     <img src="https://img.shields.io/badge/Stack-Vanilla_JS-f7df1e?style=flat-square&logo=javascript"/>
     <img src="https://img.shields.io/badge/Zero_Popups-10b981?style=flat-square"/>
+    <img src="https://img.shields.io/badge/v1.0.1--dark--default-818cf8?style=flat-square&logo=git"/>
   </p>
 
   <br/>
 </div>
+
+A minimalist, open-source temporary email application that generates disposable email addresses instantly. Built with vanilla JavaScript and powered by the 1secmail API, TempMail Pro delivers a clean, ad-free experience with zero popups, automatic inbox refreshing, and smart OTP detection — all without a single signup.
 
 ---
 
@@ -38,7 +41,7 @@
 |---------|-------------|
 | 🚀 **One-Click Generate** | Instant disposable email — no signup, no delay |
 | 🔄 **Silent Auto-Refresh** | Inbox auto-checks every 8s — zero clicks needed |
-| 🌙 **Dark Mode** | Eye-friendly theme with one-click toggle |
+| 🌙 **Dark Mode (Default)** | Eye-friendly dark theme with one-click toggle, persisted |
 | 🔢 **OTP Auto-Detect** | Verification codes highlighted in green badges |
 | 📋 **Click OTP to Copy** | Tap any OTP badge to copy code instantly |
 | 📝 **Message Previews** | See email body preview right in the inbox list |
@@ -54,7 +57,7 @@
 | Feature | TempMail Pro | Other Temp Mail Sites |
 |---------|:------------:|:---------------------:|
 | 🚫 **Popups & Ads** | ❌ Zero | ✅ Full of ads |
-| 🌙 **Dark Mode** | ✅ Yes | ❌ Rarely |
+| 🌙 **Dark Mode** | ✅ Yes (default) | ❌ Rarely |
 | 🔄 **Auto-Refresh** | ✅ Silent (8s) | ❌ Manual only |
 | 📋 **OTP Click-to-Copy** | ✅ Yes | ❌ No |
 | 📝 **Message Preview** | ✅ Yes | ❌ No |
@@ -77,6 +80,7 @@ cd tempmail
 # 2. Open in browser (no build step needed!)
 open index.html
 ```
+**Note:** The API proxy requires Vercel to forward requests to 1secmail. For local testing without the proxy, you can directly use the 1secmail API by modifying `API` in `js/app.js`.
 
 ### Deploy on Vercel
 ```bash
@@ -96,11 +100,12 @@ Or just connect your GitHub repo to [vercel.com](https://vercel.com) — zero co
 tempmail/
 ├── index.html          # Main application page
 ├── css/
-│   └── style.css       # Responsive styles
+│   └── style.css       # Responsive styles (light + dark theme)
 ├── js/
 │   └── app.js          # Core application logic
 ├── api/
-│   └── proxy.js        # Vercel serverless proxy
+│   └── proxy.js        # Vercel serverless proxy (ESM, timeout 15s)
+├── package.json         # ESM module config
 ├── vercel.json         # Vercel deployment config
 └── README.md           # This file
 ```
@@ -121,6 +126,19 @@ Browser (index.html) → Vercel Proxy (api/proxy.js) → 1secmail API (free)
 6. **All data persists** via localStorage — survives page refreshes
 
 No database. No authentication. No backend infrastructure. Just pure simplicity.
+
+---
+
+## 📦 Recent Improvements (v1.0.1)
+
+| Fix | Description |
+|-----|-------------|
+| 🌙 **Dark Theme Default** | Dark mode is now default with no white flash on load |
+| ⚡ **Proxy Timeout** | 15s AbortController timeout prevents hanging requests |
+| 🔄 **Dual URL Parsing** | Proxy supports both `req.query` and `req.url` fallback |
+| 📨 **Email Cache Fix** | Previously cached emails showed "(No content)" — fixed |
+| 🛡️ **Error Feedback** | Generate failures now show actual error message in toast |
+| 💾 **Theme Persist** | Theme preference properly saves/loads across sessions |
 
 ---
 
