@@ -1,7 +1,8 @@
 const API = '/api/proxy'
 const DIRECT_API = 'https://www.1secmail.com/api/v1'
 const STORAGE_KEY = 'tempmailpro'
-let useDirectApi = false
+const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:'
+let useDirectApi = isLocal
 
 let messages = []
 let storedAddress = ''
@@ -113,23 +114,31 @@ async function generateEmail() {
     wasEmpty = true; hasNew = false
     newBadge.style.display = 'none'
     closeViewer()
-    try {
-        const data = await fetchApi('action=genRandomMailbox&count=1')
-        storedAddress = data[0]
-        messages = []
-        saveState()
-        emailDisplay.innerHTML = storedAddress
-        mailCount.textContent = '0'
-        renderInbox()
-        startAutoRefresh()
-        navigator.clipboard.writeText(storedAddress).catch(() => {})
-        playSound()
-    } catch (err) {
-        emailDisplay.innerHTML = '<span class="placeholder">Click to generate</span>'
-        showToast(err.message || 'Generate failed. Check connection.')
-    } finally {
-        showLoading(false)
+    let tries = 0
+    while (tries < 3) {
+        try {
+            const data = await fetchApi('action=genRandomMailbox&count=1')
+            if (!data || !data[0]) throw new Error('Empty response')
+            storedAddress = data[0]
+            messages = []
+            saveState()
+            emailDisplay.innerHTML = storedAddress
+            mailCount.textContent = '0'
+            renderInbox()
+            startAutoRefresh()
+            navigator.clipboard.writeText(storedAddress).catch(() => {})
+            playSound()
+            showLoading(false)
+            return
+        } catch (err) {
+            tries++
+            if (tries >= 3) {
+                emailDisplay.innerHTML = '<span class="placeholder">Click to generate</span>'
+                showToast('Failed. Check network / Redeploy on Vercel.')
+            }
+        }
     }
+    showLoading(false)
 }
 
 function startAutoRefresh() {
