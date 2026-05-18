@@ -3,8 +3,8 @@
   <img src="https://api.dicebear.com/9.x/shapes/svg?seed=tempmail&scale=200&backgroundType=gradientLinear&backgroundRotation=0,360" width="120" alt="TempMail Pro"/>
   <br/>
   <h1>📧 TempMail Pro</h1>
-  <p><strong>Free • Fast • Anonymous • Open Source</strong></p>
-  <p>Disposable temporary email address generator with real-time inbox.</p>
+  <p><strong>🏆 The World's Most Relaxing Temp Mail Experience</strong></p>
+  <p>Zero popups • Auto-refresh • Dark mode • OTP copy • No signup • Unlimited</p>
   <br/>
 
   <p>
@@ -14,6 +14,9 @@
     <a href="https://github.com/ImranDev3/tempmail">
       <img src="https://img.shields.io/badge/Open_Source-22c55e?style=for-the-badge&logo=github&logoColor=white" alt="Open Source"/>
     </a>
+    <a href="https://github.com/ImranDev3/tempmail/stargazers">
+      <img src="https://img.shields.io/github/stars/ImranDev3/tempmail?style=for-the-badge&logo=github&color=fbbf24" alt="Stars"/>
+    </a>
   </p>
 
   <p>
@@ -21,6 +24,7 @@
     <img src="https://img.shields.io/badge/Deployed_on-Vercel-000000?style=flat-square&logo=vercel"/>
     <img src="https://img.shields.io/badge/License-MIT-22c55e?style=flat-square"/>
     <img src="https://img.shields.io/badge/Stack-Vanilla_JS-f7df1e?style=flat-square&logo=javascript"/>
+    <img src="https://img.shields.io/badge/Zero_Popups-10b981?style=flat-square"/>
   </p>
 
   <br/>
@@ -28,19 +32,37 @@
 
 ---
 
-## ✨ Features
+## ✨ Premium Features
 
 | Feature | Description |
 |---------|-------------|
-| 🚀 **Instant Generation** | Generate a disposable email with one click |
-| 🔄 **Real-time Inbox** | Auto-fetches incoming messages instantly |
-| 🔐 **No Registration** | 100% anonymous — no signup, no tracking |
-| 📱 **Mobile First** | Fully responsive, works on any device |
+| 🚀 **One-Click Generate** | Instant disposable email — no signup, no delay |
+| 🔄 **Silent Auto-Refresh** | Inbox auto-checks every 8s — zero clicks needed |
+| 🌙 **Dark Mode** | Eye-friendly theme with one-click toggle |
+| 🔢 **OTP Auto-Detect** | Verification codes highlighted in green badges |
+| 📋 **Click OTP to Copy** | Tap any OTP badge to copy code instantly |
+| 📝 **Message Previews** | See email body preview right in the inbox list |
+| 🎯 **Auto-Copy on Generate** | Email auto-copies to clipboard when created |
 | 💾 **Persistent Storage** | Emails survive page refreshes (localStorage) |
-| 🔢 **OTP Detection** | Automatically highlights verification codes |
-| 📋 **One-Click Copy** | Copy email address to clipboard instantly |
-| 🆓 **Completely Free** | No limits, no payments, no API keys |
-| 🌐 **Zero Server Load** | Lightweight static site + serverless API |
+| 📱 **Mobile First** | Fully responsive on every screen size |
+| 🚫 **Zero Popups** | No annoying notifications — clean, silent UX |
+
+---
+
+## 🥇 Why TempMail Pro is Better
+
+| Feature | TempMail Pro | Other Temp Mail Sites |
+|---------|:------------:|:---------------------:|
+| 🚫 **Popups & Ads** | ❌ Zero | ✅ Full of ads |
+| 🌙 **Dark Mode** | ✅ Yes | ❌ Rarely |
+| 🔄 **Auto-Refresh** | ✅ Silent (8s) | ❌ Manual only |
+| 📋 **OTP Click-to-Copy** | ✅ Yes | ❌ No |
+| 📝 **Message Preview** | ✅ Yes | ❌ No |
+| 🎯 **Auto-Copy Email** | ✅ On generate | ❌ No |
+| 💾 **Survives Refresh** | ✅ localStorage | ❌ Lost |
+| 🌐 **Open Source** | ✅ Full code | ❌ Closed |
+| 💰 **Pricing** | 🆓 **Free Forever** | 💵 Paid limits |
+| ⚡ **Speed** | 🚀 Instant | 🐌 Slow |
 
 ---
 
