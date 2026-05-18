@@ -116,10 +116,10 @@ function renderInbox() {
                 <span>Emails will appear here automatically</span>
             </div>
         `
-        mailCount.textContent = '0 messages'
+        mailCount.textContent = '0'
         return
     }
-    mailCount.textContent = `${messages.length} message${messages.length > 1 ? 's' : ''}`
+    mailCount.textContent = messages.length
     messages.forEach((msg, i) => {
         const otp = extractOtp(msg)
         const item = document.createElement('div')
